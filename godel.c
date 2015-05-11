@@ -6,11 +6,14 @@
 #include<string.h>
 #include"gmp.h"
 
-void encode(char *expr, mpz_t *t) {
+
+
+void encode(char *expr, mpz_t *t, int length) {
+	
 	int i=0;
-	int length = strlen(expr);
-	int powers[length];
+	int powers;
 	mpz_init(*t);
+	mpz_set_ui(*t,1);
 	
 	mpz_t holder;
 	mpz_t base;
@@ -18,21 +21,33 @@ void encode(char *expr, mpz_t *t) {
 	mpz_init(holder);
 	mpz_init(base);
 	
+	mpz_set_ui(base,2);
+	
 	int temp=0;
 	mpz_set_ui(*t,1);
+	
 	for (i=0;i<length;i++) {
-		if (expr[i]=='0') powers[i]=1;
-		if (expr[i]=='=') powers[i]=2;
-		if (expr[i]=='S') powers[i]=3;
-		if (expr[i]=='V') powers[i]=4;
-		if (expr[i]=='-') powers[i]=5;
-		if (expr[i]=='x') powers[i]=6;
-		if (expr[i]=='y') powers[i]=7;
-		if (expr[i]=='z') powers[i]=8;
-		if (expr[i]=='+') powers[i]=9;
-		if (expr[i]=='E') powers[i]=10;
+		
+		if (expr[i]=='0') powers=1;
+		if (expr[i]=='=') powers=2;
+		if (expr[i]=='S') powers=3;
+		if (expr[i]=='V') powers=4;
+		if (expr[i]=='-') powers=5;
+		if (expr[i]=='x') powers=6;
+		if (expr[i]=='y') powers=7;
+		if (expr[i]=='z') powers=8;
+		if (expr[i]=='+') powers=9;
+		if (expr[i]=='E') powers=10;
+		
+		mpz_pow_ui(holder,base,powers);
+		mpz_mul(*t,*t,holder);
+		mpz_nextprime(base,base);
 		
 	}
+	
+	mpz_clear(holder);
+	mpz_clear(base);
+	
 }
 
 void decode(unsigned long int *powers, int length, char *longexpression) {
@@ -114,6 +129,8 @@ int main(int argc, char **argv) {
 
 	basecount = factorize(input,exponents);
 	
+	printf("\n%d\n",basecount);
+	
 	unsigned long int finalexponents[basecount];
 	
 	for (j=0;j<basecount;j++) {
@@ -133,6 +150,17 @@ int main(int argc, char **argv) {
 		printf("%c",expression[j]);
 	}
 	
+	mpz_t t;
+	
+	printf("\n%d\n",strlen(expression));
+	printf(",%c,",expression[0]);
+	printf(",%c,",expression[1]);
+	printf(",%c,",expression[2]);
+	
+	encode(expression,&t, basecount);
+	
+	puts("");
+	mpz_out_str(stdout,10,t);
 	
 	return 0;
 	

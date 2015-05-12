@@ -6,7 +6,17 @@
 #include<string.h>
 #include"gmp.h"
 
-
+void disjunction(char *a, int la, char *b, int lb, char *c) {  //not tested
+	int i;
+	int lc = la+lb+1;
+	char c[lc];
+	for (i=0;i<lc;i++) {
+		if (i<la) c[i]=a[i];
+		if (i=la) c[i]='V';
+		else c[i]=b[i-la];
+	}
+	return;
+}
 
 void encode(char *expr, mpz_t *t, int length) {
 	
@@ -38,7 +48,9 @@ void encode(char *expr, mpz_t *t, int length) {
 		if (expr[i]=='z') powers=8;
 		if (expr[i]=='+') powers=9;
 		if (expr[i]=='E') powers=10;
-		
+		if (expr[i]=='[') powers=11;
+		if (expr[i]==']') powers=12;
+		if (expr[i]=='\0') break;
 		mpz_pow_ui(holder,base,powers);
 		mpz_mul(*t,*t,holder);
 		mpz_nextprime(base,base);
@@ -47,7 +59,7 @@ void encode(char *expr, mpz_t *t, int length) {
 	
 	mpz_clear(holder);
 	mpz_clear(base);
-	
+	return;
 }
 
 void decode(unsigned long int *powers, int length, char *longexpression) {
@@ -63,7 +75,11 @@ void decode(unsigned long int *powers, int length, char *longexpression) {
 		if (powers[i]==8) longexpression[i]='z';
 		if (powers[i]==9) longexpression[i]='+';
 		if (powers[i]==10) longexpression[i]='E';	
+		if (powers[i]==11) longexpression[i]='[';	
+		if (powers[i]==12) longexpression[i]=']';	
 	}
+	//*longexpression++ = '\0';
+	return;
 }
 
 int factorize(mpz_t input, unsigned long int *exponents) {  //This is a trial division algorithm. 
@@ -90,7 +106,8 @@ int factorize(mpz_t input, unsigned long int *exponents) {  //This is a trial di
 		int i=0;
 		
 		while(mpz_cmp(prime, sqrtinp)<=0) {
-
+			
+			if (mpz_cmp_ui(prime,7919)>0) break;  //More than 1000 characters, break...
 			unsigned long int smoothness;
 			smoothness = mpz_remove(temp, temp,prime);  
 			
@@ -132,9 +149,10 @@ int main(int argc, char **argv) {
 	printf("\n%d\n",basecount);
 	
 	unsigned long int finalexponents[basecount];
-	
+	puts("");
 	for (j=0;j<basecount;j++) {
 		finalexponents[j]=exponents[j];
+		printf(",%d,",exponents[j]);
 	}
 	puts("");
 
@@ -152,15 +170,16 @@ int main(int argc, char **argv) {
 	
 	mpz_t t;
 	
-	printf("\n%d\n",strlen(expression));
-	printf(",%c,",expression[0]);
-	printf(",%c,",expression[1]);
-	printf(",%c,",expression[2]);
-	
 	encode(expression,&t, basecount);
 	
 	puts("");
 	mpz_out_str(stdout,10,t);
+	
+	if (argc>2) {
+			puts("\nEncoding:");
+			encode(argv[2],&t,strlen(argv[2]));
+			mpz_out_str(stdout,10,t);
+	}
 	
 	return 0;
 	

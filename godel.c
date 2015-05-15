@@ -5,10 +5,52 @@
 #include<time.h>
 #include<string.h>
 #include"gmp.h"
+// inference rules needing implementation
+// (AVB)VC FROM AV(BVC)
+// BVC FROM (AVB)&(-AVC)
+// Ex(-AVB) FROM -(x free in B)&(-AVB)
+
+struct formula {
+	char representation[100];
+	int valid; //valid iff deduced in current finite structure
+	// other fields flagging if axiom?
+};
+
+typedef struct formula Formula;
+
+ Formula* Formula_new(char *representation,int valid) {
+	 Formula* new = malloc(sizeof(Formula));
+	 new->valid=valid;
+	 strcpy(new->representation,representation);
+	 return new;
+ }
+ 
+ void printForm(Formula *a) {
+	 printf("\n%s\n",a->representation);
+ }
+ 
+void associative(char *a) { // (AVB)VC FROM AV(BVC), not implemented yet dont use
+	int i,parenstart,parenend;
+	char  *pch;
+	if((pch = strchr(a,'(')) == NULL) return;
+	parenstart = pch-a;
+}
+
 
 void disjunction(char *a,char *b) { // changes a to aVb
 	strcat(a,"V");
 	strcat(a,b);
+}
+
+Formula* fdisjunction(Formula *a, Formula *b) { //untested
+	char *astr, *bstr;
+	int disv = 0;
+	if (a->valid==1 || b->valid==1) disv=1;
+	strcpy(astr,a->representation);
+	strcpy(bstr,b->representation);
+	disjunction(astr,bstr);
+	Formula* disj = Formula_new(astr,disv);
+	return disj;
 }
 
 void contraction(char *a) {  //if a = bVb for some b, reduces a to b
@@ -18,11 +60,20 @@ void contraction(char *a) {  //if a = bVb for some b, reduces a to b
 	const char *ptr;
 	if ((la & 1)==0) return;
 	if ((ptr=strchr(a,'V'))== NULL) return;
-	result = ptr-a;
+	result = ptr-a;  // position of V in a
 	char first[result],last[result];
 	for (i=0;i<result;i++) last[i]=a[result+i+1];
 	strncpy(first,a,result);
 	if (strcmp(first,last)==0) a[result]='\0';
+}
+
+Formula* fcontraction(Formula *a) {  //untested
+	int valid = a->valid;
+	char *contrstr;
+	strcpy(contrstr,a->representation);
+	contraction(contrstr);
+	Formula* contr = Formula_new(contrstr,valid);
+	return contr;
 }
 
 void encode(char *expr, mpz_t *t, int length) {  //encodes the godel numbering for expr in t
@@ -113,6 +164,26 @@ int factorize(mpz_t input, unsigned long int *exponents) {  //Factorizes input b
 }
 
 int main(int argc, char **argv) {
+	int i;
+	Formula* container[argc-1];
+	for (i=0;i<argc-1;i++){			// initialize NLA
+		container[i] = Formula_new(argv[i+1],1);
+	}
+	Formula* victim;
+	victim = container[0];
+	printForm(victim);
+	for (i=0;i<100;i++) {
+		int choice = rand()%2;h
+		if (choice==0) {
+			victim = fcontraction(victim);
+		}
+		if (choice==1) {
+			victim = fdisjunction(victim,container[1]);
+		}
+	}
+	printForm(victim);
+	
+	/*  MK 1 USING GODEL NUMBERING
 	int i=0;
 	int j=0;
 	int basecount=0;
@@ -166,5 +237,6 @@ int main(int argc, char **argv) {
 	end = clock();
 	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	printf("\nTime taken: %f\n ",cpu_time_used);
+	*/
 	return 0;
 	}

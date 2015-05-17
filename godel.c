@@ -2,33 +2,68 @@
 #include<string.h>
 #include<stdlib.h>
 #include<assert.h>
-#include<time.h>
-#include<string.h>
+#include<vector>
 #include"gmp.h"
-// inference rules needing implementation
-// (AVB)VC FROM AV(BVC)
-// BVC FROM (AVB)&(-AVC)
-// Ex(-AVB) FROM -(x free in B)&(-AVB)
+#include<string.h>
+#include<iostream>
+#include"godel.h"
 
-struct formula {
-	char representation[100];
-	int valid; //valid iff deduced in current finite structure
-	// other fields flagging if axiom?
-};
+using namespace std;
 
-typedef struct formula Formula;
+Symbol::Symbol() {
+	arity = 0;
+	rep = '\0';
+}
+Symbol::Symbol(char r,int a) {
+	arity = a;
+	rep = r;
+}
+FSymbol::FSymbol(char r,int a) {
+	arity = a;
+	rep = r;
+}
+LSymbol::LSymbol(char r,int a) {
+	arity = a;
+	rep = r;
+}
+PSymbol::PSymbol(char r,int a) {
+	arity = a;
+	rep = r;
+}
 
- Formula* Formula_new(char *representation,int valid) {
-	 Formula* new = malloc(sizeof(Formula));
-	 new->valid=valid;
-	 strcpy(new->representation,representation);
-	 return new;
- }
- 
- void printForm(Formula *a) {
-	 printf("\n%s\n",a->representation);
- }
- 
+Disjunction::Disjunction() {
+	arity = 2;
+	rep = 'V';
+}
+/*
+Existential::Existential() {
+	arity = 1;
+}
+
+Existential::Existential(VTerm subject) {
+	arity = 1;
+			// NOT IMPLEMENTED
+}
+*/
+Designator::Designator() {
+	u = Symbol();
+}
+Designator::Designator(Symbol u1, std::vector<Designator> tail1) {
+	u=u1;
+	tail=tail1;
+}
+string Designator::getRep() {
+	return rep;
+}
+
+Formula::Formula(){
+	
+}
+
+VTerm::VTerm() {
+	
+}
+
 void associative(char *a) { // (AVB)VC FROM AV(BVC), not implemented yet dont use
 	int i,parenstart,parenend;
 	char  *pch;
@@ -40,17 +75,6 @@ void associative(char *a) { // (AVB)VC FROM AV(BVC), not implemented yet dont us
 void disjunction(char *a,char *b) { // changes a to aVb
 	strcat(a,"V");
 	strcat(a,b);
-}
-
-Formula* fdisjunction(Formula *a, Formula *b) { //untested
-	char *astr, *bstr;
-	int disv = 0;
-	if (a->valid==1 || b->valid==1) disv=1;
-	strcpy(astr,a->representation);
-	strcpy(bstr,b->representation);
-	disjunction(astr,bstr);
-	Formula* disj = Formula_new(astr,disv);
-	return disj;
 }
 
 void contraction(char *a) {  //if a = bVb for some b, reduces a to b
@@ -67,14 +91,6 @@ void contraction(char *a) {  //if a = bVb for some b, reduces a to b
 	if (strcmp(first,last)==0) a[result]='\0';
 }
 
-Formula* fcontraction(Formula *a) {  //untested
-	int valid = a->valid;
-	char *contrstr;
-	strcpy(contrstr,a->representation);
-	contraction(contrstr);
-	Formula* contr = Formula_new(contrstr,valid);
-	return contr;
-}
 
 void encode(char *expr, mpz_t *t, int length) {  //encodes the godel numbering for expr in t
 	int i=0;
@@ -163,80 +179,16 @@ int factorize(mpz_t input, unsigned long int *exponents) {  //Factorizes input b
 	return basecount;
 }
 
-int main(int argc, char **argv) {
-	int i;
-	Formula* container[argc-1];
-	for (i=0;i<argc-1;i++){			// initialize NLA
-		container[i] = Formula_new(argv[i+1],1);
-	}
-	Formula* victim;
-	victim = container[0];
-	printForm(victim);
-	for (i=0;i<100;i++) {
-		int choice = rand()%2;h
-		if (choice==0) {
-			victim = fcontraction(victim);
-		}
-		if (choice==1) {
-			victim = fdisjunction(victim,container[1]);
-		}
-	}
-	printForm(victim);
-	
-	/*  MK 1 USING GODEL NUMBERING
-	int i=0;
-	int j=0;
+string numToString(mpz_t t) {
 	int basecount=0;
 	unsigned long int exponents[100];
-	clock_t start, end;
-	double cpu_time_used;
-	start = clock();
-	mpz_t input;
-	mpz_init (input);
-	mpz_set_str(input,argv[1],10);  
-	basecount = factorize(input,exponents); // magic
-	printf("\n%d\n",basecount);
+	basecount = factorize(t,exponents);
 	unsigned long int finalexponents[basecount];
-	puts("");
-	for (j=0;j<basecount;j++) {
+	for (int j=0;j<basecount;j++) {
 		finalexponents[j]=exponents[j];
-		printf(",%d,",exponents[j]);
 	}
 	char expression[basecount];
 	decode(finalexponents,basecount,expression);
-	for (j=0;j<basecount;j++) {
-		printf("%c",expression[j]);
-	}
-	mpz_t t;
-	encode(expression,&t, basecount);
-	puts("");
-	mpz_out_str(stdout,10,t);
-	puts("");
-	if (argc==3) {
-			puts("\nEncoding:");
-			encode(argv[2],&t,strlen(argv[2]));
-			mpz_out_str(stdout,10,t);
-		}
-	if (argc==4) {
-		char copy[strlen(argv[2])];
-		strcpy(copy,argv[2]);
-		disjunction(copy,argv[3]);
-	for (j=0;j<strlen(copy);j++) {
-		printf("%c",copy[j]);
-		}
-		puts("");
-		mpz_t t;
-		mpz_init(t);
-		encode(copy,&t,strlen(copy));
-		mpz_out_str(stdout,10,t);
-		puts("\nAttempting to contract");
-		contraction(copy);
-		printf("\n%s",copy);
-		printf("\nlength: %d",strlen(copy));
-	}
-	end = clock();
-	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	printf("\nTime taken: %f\n ",cpu_time_used);
-	*/
-	return 0;
-	}
+	string end(expression);
+	return end;
+}

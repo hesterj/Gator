@@ -1,91 +1,107 @@
 #ifndef GODEL_H_
 #define GODEL_H_
-#endif
 
 using namespace std;
 
-class Symbol {
+class Container {
 	public:
-		char rep;
 		int arity;
-		Symbol(char rep, int arity);
+		int getArity();
+		void setArity(int inp);
+		string getRep();
+		void setRep(string inp);
+		string rep;
+};
+
+class Symbol: public virtual Container {
+	public:
+		Symbol(string rep, int arity);
 		Symbol();
 };
 
 class FSymbol: public Symbol {
 	public:
-		FSymbol(char rep, int arity);
+		FSymbol(string rep, int arity);
 };
 
 class PSymbol: public Symbol {
 	public:
-		PSymbol(char rep, int arity);
+		PSymbol(string rep, int arity);
+		PSymbol();
+};
+
+class Equals: public PSymbol {
+	public:
+		Equals();
 };
 
 class LSymbol: public Symbol {
 	public:
-		LSymbol(char rep, int arity);
+		LSymbol(string rep, int arity);
+		LSymbol();
 };
 
 class Negation: public LSymbol {
-	Negation();
+	public: 
+		Negation();
 };
 
 class Disjunction: public LSymbol {
-	Disjunction();
-};
-/*  TROUBLE
-class Existential: public LSymbol {
-	VTerm variable;
-	Existential();
-	Existential(VTerm subject);
-};
-*/
-
-class Designator {
 	public:
-		string rep;
-		string getRep();
+		Disjunction();
+};
+
+class Existential: public LSymbol {
+	public:
+		Existential();
+		Existential(string var);
+};
+
+class Designator: public virtual Container {
+	public:
 		Symbol u;
 		std::vector<Designator> tail;
-		int getArity();
 		Designator(Symbol u, std::vector<Designator> tail);
 		Designator();
 };
 
 class Term: public Designator {
 	public:
+		Term();
 };
 
 class FTerm: public Term {
 	public:
-		FSymbol u;
-		std::vector<Term> tail;
+		FTerm();
 };
 
- class VTerm: public Term {
+ class VTerm: public Term, public Symbol {
 	 public:
-		char vrep;
 		VTerm();
+		VTerm(string rep);
  };
 
 class Formula: public Designator {
 	public:
 		int valid;
+		void setValid();
 		Formula();
+		Formula(Designator inp);  //  Use only if we know inp is a formula!
 };
 
 class NegFormula: public Formula {
 	public:
-	
+		NegFormula();
 };
 
 class DisFormula: public Formula {
 	public:
+		DisFormula();
 };
 
 class ExisFormula: public Formula {
 	public:
+		ExisFormula();
 };
 
 class AFormula: public Formula {
@@ -94,11 +110,16 @@ class AFormula: public Formula {
 		std::vector<Term> tail;
 };
 
-Formula fExpansion(Formula a, Formula b);
-Formula fContraction(Formula a);
+
+bool isFormula(Formula a);
+bool isTerm(Term a);
+Formula fNegation(Formula a);
+DisFormula fExpansion(Formula a, Formula b);
+Formula fContraction(DisFormula a);
 Formula fAssociative(Formula a);
 Formula fCut(Formula a, Formula b);
-Formula exIntroduction(Formula a);
+Formula fexIntroduction(Formula a,VTerm b);
+Formula equals(Term a, Term b);
 
 void associative(char *a);  // not implemented
 void disjunction(char *a,char *b);
@@ -107,3 +128,5 @@ void encode(char *expr, mpz_t *t, int length);
 void decode(unsigned long int *powers, int length, char *longexpression);
 int factorize(mpz_t input, unsigned long int *exponents);
 string numToString(mpz_t t);
+
+#endif

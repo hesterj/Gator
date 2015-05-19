@@ -7,44 +7,64 @@
 #include<string.h>
 #include<iostream>
 #include"godel.h"
+#include "symbols.h"
+#include "designator.h"
 
 using namespace std;
 
 Symbol::Symbol() {
-	arity = 0;
+	arity = -1;
 	rep = '\0';
 }
-Symbol::Symbol(char r,int a) {
+Symbol::Symbol(string r,int a) {
 	arity = a;
 	rep = r;
 }
-FSymbol::FSymbol(char r,int a) {
+void Container::setArity(int a) {
+	arity = a;
+}
+int Container::getArity() {
+	return arity;
+}
+void Container::setRep(string a) {
+	rep = a;
+}
+string Container::getRep() {
+	return rep;
+}
+FSymbol::FSymbol(string r,int a) {
 	arity = a;
 	rep = r;
 }
-LSymbol::LSymbol(char r,int a) {
+LSymbol::LSymbol(string r,int a) {
 	arity = a;
 	rep = r;
 }
-PSymbol::PSymbol(char r,int a) {
+PSymbol::PSymbol(string r,int a) {
 	arity = a;
 	rep = r;
 }
-
+PSymbol::PSymbol() {}
+Equals::Equals() {
+	arity = 2;
+	rep = "=";
+}
+LSymbol::LSymbol() {
+	arity = -1;
+	rep = "\0";
+}
+Negation::Negation() {
+	arity = 1;
+	rep = "-";
+}
 Disjunction::Disjunction() {
 	arity = 2;
-	rep = 'V';
+	rep = "V";
 }
-/*
 Existential::Existential() {
-	arity = 1;
+	arity = 2;
+	rep = "E";
 }
-
-Existential::Existential(VTerm subject) {
-	arity = 1;
-			// NOT IMPLEMENTED
-}
-*/
 Designator::Designator() {
 	u = Symbol();
 }
@@ -52,17 +72,24 @@ Designator::Designator(Symbol u1, std::vector<Designator> tail1) {
 	u=u1;
 	tail=tail1;
 }
-string Designator::getRep() {
-	return rep;
+Formula::Formula(){valid = -1;}
+DisFormula::DisFormula(){valid = -1;}
+void Formula::setValid() {valid = 1;}
+Formula::Formula(Designator inp) {
+	u = inp.u;
+	tail = inp.tail;
+	valid = 0;
 }
-
-Formula::Formula(){
-	
-}
-
 VTerm::VTerm() {
-	
+	arity = 0;
+	rep = "x";
 }
+VTerm::VTerm(string inp) {
+	arity = 0;
+	rep = inp;
+	u=Symbol(rep,0);
+}
+Term::Term() {}
 
 void associative(char *a) { // (AVB)VC FROM AV(BVC), not implemented yet dont use
 	int i,parenstart,parenend;
@@ -117,6 +144,7 @@ void encode(char *expr, mpz_t *t, int length) {  //encodes the godel numbering f
 		if (expr[i]=='E') powers=10;
 		if (expr[i]=='[') powers=11;
 		if (expr[i]==']') powers=12;
+		if (expr[i]=='w') powers=13;
 		if (expr[i]=='\0') break;
 		mpz_pow_ui(holder,base,powers);
 		mpz_mul(*t,*t,holder);
@@ -142,6 +170,7 @@ void decode(unsigned long int *powers, int length, char *longexpression) {  // t
 		if (powers[i]==10) longexpression[i]='E';	
 		if (powers[i]==11) longexpression[i]='[';	
 		if (powers[i]==12) longexpression[i]=']';	
+		if (powers[i]==13) longexpression[i]='w';
 	}
 	return;
 }
@@ -191,4 +220,49 @@ string numToString(mpz_t t) {
 	decode(finalexponents,basecount,expression);
 	string end(expression);
 	return end;
+}
+
+Formula equals(Term a, Term b) {
+	Formula r = Formula();
+	r.u = Equals();
+	r.tail.push_back(a);
+	r.tail.push_back(b);
+	r.rep = r.u.getRep() + a.getRep() + b.getRep();
+	return r;
+}
+
+DisFormula fExpansion(Formula a, Formula b) {
+	DisFormula r = DisFormula();
+	r.u = Disjunction();
+	if ((a.valid==1) || (b.valid==1)) r.setValid();
+	r.tail.push_back(a);
+	r.tail.push_back(b);
+	r.rep = r.u.getRep() + a.getRep() + b.getRep();
+	return r;
+}
+
+Formula fNegation(Formula a) {  // untested
+	Formula r = Formula();
+	r.u = Negation();
+	r.tail.push_back(a);
+	r.rep = r.u.getRep() + a.getRep();
+	return r;
+}
+
+Formula fexIntroduction(Formula a,VTerm b) { //untested
+	Formula r = Formula();
+	r.u = Existential();
+	r.tail.push_back(b);
+	r.tail.push_back(a);
+	r.rep = r.u.getRep()+ b.getRep() + a.getRep();
+	return r;
+}
+
+Formula fContraction(DisFormula a) {  //untested
+	Formula r = Formula();
+	if (a.tail.at(0).rep == a.tail.at(1).rep) {
+		r = Formula(a.tail.at(0));
+	}
+	if (a.valid==1) r.setValid();
+	return r;
 }

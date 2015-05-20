@@ -72,13 +72,21 @@ Designator::Designator(Symbol u1, std::vector<Designator> tail1) {
 	u=u1;
 	tail=tail1;
 }
-Formula::Formula(){valid = -1;}
-DisFormula::DisFormula(){valid = -1;}
+Formula::Formula(){
+	valid = -1;
+	tag = 0;
+	}
+DisFormula::DisFormula(){
+	valid = -1;
+	tag = 1;
+	}
 void Formula::setValid() {valid = 1;}
 Formula::Formula(Designator inp) {
 	u = inp.u;
+	if (u.rep == "V") tag = 1;
 	tail = inp.tail;
 	valid = 0;
+	rep = inp.rep;
 }
 VTerm::VTerm() {
 	arity = 0;
@@ -210,7 +218,7 @@ int factorize(mpz_t input, unsigned long int *exponents) {  //Factorizes input b
 
 string numToString(mpz_t t) {
 	int basecount=0;
-	unsigned long int exponents[100];
+	unsigned long int exponents[1000];
 	basecount = factorize(t,exponents);
 	unsigned long int finalexponents[basecount];
 	for (int j=0;j<basecount;j++) {
@@ -231,21 +239,23 @@ Formula equals(Term a, Term b) {
 	return r;
 }
 
-DisFormula fExpansion(Formula a, Formula b) {
-	DisFormula r = DisFormula();
+Formula fExpansion(Formula a, Formula b) {
+	Formula r = Formula();
 	r.u = Disjunction();
 	if ((a.valid==1) || (b.valid==1)) r.setValid();
 	r.tail.push_back(a);
 	r.tail.push_back(b);
+	r.tag = 1;  // mark as disjunction
 	r.rep = r.u.getRep() + a.getRep() + b.getRep();
 	return r;
 }
 
-Formula fNegation(Formula a) {  // untested
+Formula fNegation(Formula a) {  
 	Formula r = Formula();
 	r.u = Negation();
 	r.tail.push_back(a);
 	r.rep = r.u.getRep() + a.getRep();
+	r.tag = 2;
 	return r;
 }
 
@@ -258,11 +268,42 @@ Formula fexIntroduction(Formula a,VTerm b) { //untested
 	return r;
 }
 
-Formula fContraction(DisFormula a) {  //untested
+Formula fContraction(Formula a) {  
 	Formula r = Formula();
-	if (a.tail.at(0).rep == a.tail.at(1).rep) {
-		r = Formula(a.tail.at(0));
+	if (a.u.rep != "V") return a;
+	if (a.tail.at(0).tag==1) a.tail.at(0) = fContraction(a.tail.at(0));
+	if (a.tail.at(1).tag==1) a.tail.at(1) = fContraction(a.tail.at(1));
+	if (a.tag == 1) {
+		if (a.tail.at(0).rep == a.tail.at(1).rep) {
+			r = Formula(a.tail.at(0));
+			if (a.valid==1) r.setValid();
+			return r;
+		}
 	}
-	if (a.valid==1) r.setValid();
+	return a;
+}
+			
+Formula fAssociative(Formula a) {  //untested 
+	Formula r = Formula();
+	if (a.valid==1) r.valid =1;
+	if (a.u.rep != "V") return a;
+	if ((a.tail.at(1).u.rep!="V")&&(a.tail.at(1).u.rep!="V")) return a;
+	r.u = a.u;
+	r.tail.at(0) = a.tail.at(1);
+	r.tail.at(1) = a.tail.at(0);
+	r.rep = r.u.getRep() + r.tail.at(0).getRep() + r.tail.at(1).getRep();
 	return r;
 }
+
+Formula fDisSwitch(Formula a) { //untested
+	if (a.u.rep == "V") {
+		Formula r = Formula();
+		r.valid = a.valid;
+		r.tail.at(0) = a.tail.at(1);
+		r.tail.at(1) = a.tail.at(0);
+		r.rep = r.u.getRep() + r.tail.at(0).getRep() + r.tail.at(1).getRep();
+		return r;
+	}
+	return a;
+}
+

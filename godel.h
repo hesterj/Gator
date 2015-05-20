@@ -60,6 +60,7 @@ class Existential: public LSymbol {
 class Designator: public virtual Container {
 	public:
 		Symbol u;
+		int tag;  // 0, 1 if DisFormula, 2 if negation, 3 if existential statement
 		std::vector<Designator> tail;
 		Designator(Symbol u, std::vector<Designator> tail);
 		Designator();
@@ -84,6 +85,7 @@ class FTerm: public Term {
 class Formula: public Designator {
 	public:
 		int valid;
+		int tag;  // 0, 1 if DisFormula
 		void setValid();
 		Formula();
 		Formula(Designator inp);  //  Use only if we know inp is a formula!
@@ -92,16 +94,19 @@ class Formula: public Designator {
 class NegFormula: public Formula {
 	public:
 		NegFormula();
+		std::vector<Formula> tail;
 };
 
 class DisFormula: public Formula {
 	public:
 		DisFormula();
+		std::vector<Formula> tail;
 };
 
 class ExisFormula: public Formula {
 	public:
 		ExisFormula();
+		std::vector<Formula> tail;
 };
 
 class AFormula: public Formula {
@@ -111,17 +116,20 @@ class AFormula: public Formula {
 };
 
 
-bool isFormula(Formula a);
-bool isTerm(Term a);
-Formula fNegation(Formula a);
-DisFormula fExpansion(Formula a, Formula b);
-Formula fContraction(DisFormula a);
-Formula fAssociative(Formula a);
-Formula fCut(Formula a, Formula b);
-Formula fexIntroduction(Formula a,VTerm b);
-Formula equals(Term a, Term b);
+int isFormula(Formula a);
+int isTerm(Term a);
+int freeInA(Formula A, VTerm x);  // 1 if x free in A, 0 otherwise
 
-void associative(char *a);  // not implemented
+Formula fNegation(Formula a); // returns -a
+Formula fExpansion(Formula a, Formula b);
+Formula fContraction(Formula a);
+Formula fAssociative(Formula a);  
+Formula fCut(Formula a, Formula b);  
+Formula fDisSwitch(Formula a);	// switches a and b if disjunction
+Formula fexIntroduction(Formula a,VTerm b); // returns EbA
+Formula equals(Term a, Term b); // returns a=b
+
+void associative(char *a);  
 void disjunction(char *a,char *b);
 void contraction(char *a);
 void encode(char *expr, mpz_t *t, int length);

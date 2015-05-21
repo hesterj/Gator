@@ -123,7 +123,7 @@ int freeInA(Formula A, VTerm x);  // 1 if x free in A, 0 otherwise
 Formula fNegation(Formula a); // returns -a
 Formula fExpansion(Formula a, Formula b);
 Formula fContraction(Formula a);
-Formula fAssociative(Formula a);  
+Formula fAssociative(Formula a);  // only works one way
 Formula fCut(Formula a, Formula b);  
 Formula fDisSwitch(Formula a);	// switches a and b if disjunction
 Formula fexIntroduction(Formula a,VTerm b); // returns EbA

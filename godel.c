@@ -259,7 +259,7 @@ Formula fNegation(Formula a) {
 	return r;
 }
 
-Formula fexIntroduction(Formula a,VTerm b) { //untested
+Formula fexIntroduction(Formula a,VTerm b) { // not *fully* tested
 	Formula r = Formula();
 	r.u = Existential();
 	r.tail.push_back(b);
@@ -283,14 +283,15 @@ Formula fContraction(Formula a) {
 	return a;
 }
 			
-Formula fAssociative(Formula a) {  //untested 
+Formula fAssociative(Formula a) {  
 	Formula r = Formula();
 	if (a.valid==1) r.valid =1;
 	if (a.u.rep != "V") return a;
 	if ((a.tail.at(1).u.rep!="V")&&(a.tail.at(1).u.rep!="V")) return a;
 	r.u = a.u;
-	r.tail.at(0) = a.tail.at(1);
-	r.tail.at(1) = a.tail.at(0);
+	r.tail.clear();
+	r.tail.push_back(a.tail.at(1));
+	r.tail.push_back(a.tail.at(0));
 	r.rep = r.u.getRep() + r.tail.at(0).getRep() + r.tail.at(1).getRep();
 	return r;
 }
@@ -299,11 +300,28 @@ Formula fDisSwitch(Formula a) { //untested
 	if (a.u.rep == "V") {
 		Formula r = Formula();
 		r.valid = a.valid;
-		r.tail.at(0) = a.tail.at(1);
-		r.tail.at(1) = a.tail.at(0);
+		r.tail.clear();
+		r.tail.push_back(a.tail.at(1));
+		r.tail.push_back(a.tail.at(0));
 		r.rep = r.u.getRep() + r.tail.at(0).getRep() + r.tail.at(1).getRep();
 		return r;
 	}
 	return a;
 }
 
+Formula fCut(Formula a) {	// untested
+	if (a.u.rep != "-") return a;
+	if (a.tail.at(0).u.rep != "V") return a;
+	if (a.tail.at(0).tail.at(0).u.rep != "-") return a;
+	if (a.tail.at(0).tail.at(1).u.rep != "-") return a;
+	if (a.tail.at(0).tail.at(1).tail.at(0).u.rep != "V") return a;
+	if (a.tail.at(0).tail.at(0).tail.at(0).u.rep != "V") return a;
+	if (a.tail.at(0).tail.at(1).tail.at(0).tail.at(0).u.rep != "-") return a;
+	if (a.tail.at(0).tail.at(0).tail.at(0).tail.at(0).rep != a.tail.at(0).tail.at(1).tail.at(0).tail.at(0).tail.at(0).rep) return a;
+	Formula r = Formula();
+	r.u = Disjunction();
+	r.tail.push_back(a.tail.at(0).tail.at(0).tail.at(0).tail.at(1));
+	r.tail.push_back(a.tail.at(0).tail.at(1).tail.at(0).tail.at(1));
+	r.rep = r.u.getRep() + r.tail.at(0).getRep() + r.tail.at(1).getRep();
+	return r;
+}

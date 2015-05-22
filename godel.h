@@ -118,16 +118,17 @@ class AFormula: public Formula {
 
 int isFormula(Formula a);
 int isTerm(Term a);
-int freeInA(Formula A, VTerm x);  // 1 if x free in A, 0 otherwise
+int boundInA(Formula A, VTerm x);  // 1 if x free in A, 0 otherwise
 
 Formula fNegation(Formula a); // returns -a
 Formula fExpansion(Formula a, Formula b);
 Formula fContraction(Formula a);
 Formula fAssociative(Formula a);  // only works one way
-Formula fCut(Formula a, Formula b);  
+Formula fCut(Formula a);  
 Formula fDisSwitch(Formula a);	// switches a and b if disjunction
-Formula fexIntroduction(Formula a,VTerm b); // returns EbA
+Formula fexIntroduction(Formula a,VTerm b); // adds existential  without checking if not free
 Formula equals(Term a, Term b); // returns a=b
+Formula fEintroductionRule(Formula a, VTerm x);  // inference rule, checks if x not free
 
 void associative(char *a);  
 void disjunction(char *a,char *b);
@@ -135,6 +136,8 @@ void contraction(char *a);
 void encode(char *expr, mpz_t *t, int length);
 void decode(unsigned long int *powers, int length, char *longexpression);
 int factorize(mpz_t input, unsigned long int *exponents);
+
 string numToString(mpz_t t);
+void stringToNum(string input, mpz_t *t);
 
 #endif

@@ -325,3 +325,30 @@ Formula fCut(Formula a) {	// untested
 	r.rep = r.u.getRep() + r.tail.at(0).getRep() + r.tail.at(1).getRep();
 	return r;
 }
+
+int boundInA(Formula a, VTerm x) {
+	int tlength = a.tail.size();
+	if (tlength == 0) return 0;
+	else {
+		if (a.u.rep == "E") {
+			if (a.tail.at(0).rep == x.rep) return 1;
+		}
+	}
+	int search = 0;
+	for (int i = 0; i<tlength; i++) {
+		search = boundInA(a.tail.at(i),x);
+		if (search == 1) return 1;
+	}
+	return search;
+}
+
+Formula fEintroductionRule(Formula a, VTerm x) {  // untested
+	if (a.u.rep != "V") return a;
+	if (a.tail.at(0).u.rep != "-") return a;
+	if ( boundInA(a.tail.at(1),x)==1) {
+		Formula r = Formula(a);
+		r = fexIntroduction(a,x);
+		return r;
+	}
+	return a;
+}

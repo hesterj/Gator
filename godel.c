@@ -8,6 +8,7 @@
 #include<iostream>
 #include"godel.h"
 #include "symbols.h"
+#include <stack>
 #include "designator.h"
 
 using namespace std;
@@ -22,7 +23,11 @@ Symbol::Symbol(string r,int a) {
 }
 void Container::setArity(int a) {
 	arity = a;
+	lsymbol = 0;
 }
+int Container::getLSymbol() {
+	return lsymbol;
+} 
 int Container::getArity() {
 	return arity;
 }
@@ -37,6 +42,7 @@ FSymbol::FSymbol(string r,int a) {
 	rep = r;
 }
 LSymbol::LSymbol(string r,int a) {
+	lsymbol = 1;
 	arity = a;
 	rep = r;
 }
@@ -48,22 +54,28 @@ PSymbol::PSymbol() {}
 Equals::Equals() {
 	arity = 2;
 	rep = "=";
+	psymbol = 1;
+	type = 1;
 }
 LSymbol::LSymbol() {
 	arity = -1;
 	rep = "\0";
+	lsymbol = 1;
 }
 Negation::Negation() {
 	arity = 1;
 	rep = "-";
+	lsymbol = 1;
 }
 Disjunction::Disjunction() {
 	arity = 2;
 	rep = "V";
+	lsymbol = 1;
 }
 Existential::Existential() {
 	arity = 2;
 	rep = "E";
+	lsymbol = 1;
 }
 Designator::Designator() {
 	u = Symbol();
@@ -91,13 +103,85 @@ Formula::Formula(Designator inp) {
 VTerm::VTerm() {
 	arity = 0;
 	rep = "x";
+	type = 0;
 }
 VTerm::VTerm(string inp) {
 	arity = 0;
 	rep = inp;
+	type = 0;
 	u=Symbol(rep,0);
 }
 Term::Term() {}
+
+//AXIOMS
+
+IdentityAxiom::IdentityAxiom(VTerm x) {   //  axiom of form x=x
+	this->valid = 1;     // validity set
+	this->u = Equals();
+	this->tail.push_back(x);
+	this->tail.push_back(x);
+	this->rep = this->u.getRep() + x.getRep() + x.getRep();
+	this->type = 2;   // flag not vterm
+}
+
+IdentityAxiom::IdentityAxiom() {		//arbitrary variable x
+	VTerm x = VTerm("x");
+	this->valid = 1;     // validity set
+	this->u = Equals();
+	this->tail.push_back(x);
+	this->tail.push_back(x);
+	this->rep = this->u.getRep() + x.getRep() + x.getRep();
+	this->type = 2;
+}
+
+PropositionalAxiom::PropositionalAxiom(Formula a) { //AV-A
+	this->u = Disjunction();
+	this->valid = 1;
+	Formula b = fNegation(a);
+	this->tail.push_back(b);
+	this->tail.push_back(a);
+	this->rep = this->u.getRep() + b.getRep() + a.getRep();
+	this->type = 2;
+	
+}
+
+PropositionalAxiom::PropositionalAxiom() {
+	Formula a = IdentityAxiom();
+	this->u = Disjunction();
+	this->valid = 1;
+	Formula b = fNegation(a);
+	this->tail.push_back(b);
+	this->tail.push_back(a);
+	this->rep = this->u.getRep() + b.getRep() + a.getRep();
+	this->type = 2;
+}
+
+SubstitutionAxiom::SubstitutionAxiom(Formula a, VTerm x) {
+	
+}
+
+SubstitutionAxiom::SubstitutionAxiom() {  // A_x(a)-> ExA...  -A_x(a)VExA...V-A_x(a)ExA...V-A(a)A..?
+	//  I think I am defining this incorrectly, but it should (???) have an equivalent meaning.... probably not
+	//  Ea x=a ->A(x)...  EaV-=xaA(x)
+}
+
+EqualityAxiom::EqualityAxiom(vector<VTerm> x, vector<VTerm> y, FSymbol f) {
+	
+}
+
+EqualityAxiom::EqualityAxiom(vector<VTerm> x, vector<VTerm> y, PSymbol p) {
+	
+}
+
+EqualityAxiom::EqualityAxiom(vector<VTerm> x, vector<VTerm> y) {
+	
+}
+
+EqualityAxiom::EqualityAxiom() {
+	
+}
+
+//ENDAX
 
 void associative(char *a) { // (AVB)VC FROM AV(BVC), not implemented yet dont use
 	int i,parenstart,parenend;
@@ -232,10 +316,12 @@ string numToString(mpz_t t) {
 
 Formula equals(Term a, Term b) {
 	Formula r = Formula();
+	r.valid = 0;     // validity set
 	r.u = Equals();
 	r.tail.push_back(a);
 	r.tail.push_back(b);
 	r.rep = r.u.getRep() + a.getRep() + b.getRep();
+	r.type = 1;   // flag not vterm
 	return r;
 }
 
@@ -247,6 +333,7 @@ Formula fExpansion(Formula a, Formula b) {
 	r.tail.push_back(b);
 	r.tag = 1;  // mark as disjunction
 	r.rep = r.u.getRep() + a.getRep() + b.getRep();
+	r.type = 1;
 	return r;
 }
 
@@ -259,7 +346,7 @@ Formula fNegation(Formula a) {
 	return r;
 }
 
-Formula fexIntroduction(Formula a,VTerm b) { // not *fully* tested
+Formula fexIntroduction(Formula a,VTerm b) { // not a valid inference rule!  only for construction of axioms
 	Formula r = Formula();
 	r.u = Existential();
 	r.tail.push_back(b);
@@ -296,10 +383,11 @@ Formula fAssociative(Formula a) {
 	return r;
 }
 
-Formula fDisSwitch(Formula a) { //untested
+Formula fDisSwitch(Formula a) { //  seems to work
 	if (a.u.rep == "V") {
 		Formula r = Formula();
 		r.valid = a.valid;
+		r.u = Disjunction();
 		r.tail.clear();
 		r.tail.push_back(a.tail.at(1));
 		r.tail.push_back(a.tail.at(0));
@@ -309,7 +397,7 @@ Formula fDisSwitch(Formula a) { //untested
 	return a;
 }
 
-Formula fCut(Formula a) {	// untested
+Formula fCut(Formula a) {	// seems to work correctly, only one case (exact)
 	if (a.u.rep != "-") return a;
 	if (a.tail.at(0).u.rep != "V") return a;
 	if (a.tail.at(0).tail.at(0).u.rep != "-") return a;
@@ -326,7 +414,7 @@ Formula fCut(Formula a) {	// untested
 	return r;
 }
 
-int boundInA(Formula a, VTerm x) {
+int boundInA(Formula a, VTerm x) {  // tested successfully
 	int tlength = a.tail.size();
 	if (tlength == 0) return 0;
 	else {
@@ -342,7 +430,7 @@ int boundInA(Formula a, VTerm x) {
 	return search;
 }
 
-Formula fEintroductionRule(Formula a, VTerm x) {  // untested
+Formula fEintroductionRule(Formula a, VTerm x) {  // works iff implication in form (-aVb)
 	if (a.u.rep != "V") return a;
 	if (a.tail.at(0).u.rep != "-") return a;
 	if ( boundInA(a.tail.at(1),x)==1) {
@@ -351,4 +439,58 @@ Formula fEintroductionRule(Formula a, VTerm x) {  // untested
 		return r;
 	}
 	return a;
+}
+
+string InfixToPrefix(string rep) {   // needs a lot of help!
+	int length = rep.length();
+	std::stack<char> thestack;
+	for (int i=length-1;i>=0;i--) {
+		char temp = rep.at(i);
+		if ((temp != 'V')||(temp!='-')||(temp != 'E')) {
+			thestack.push(temp);
+		}
+		
+		
+		
+	}
+
+	return "a";
+}
+
+string PrefixToInfix(Formula a) {   // assumes base case of = being only predicate symbol!  
+
+	string a1 = "";
+	string a2 = "";
+	
+	if (a.u.rep == "V") {
+		a1 = PrefixToInfix(a.tail.at(0));
+		a2 = PrefixToInfix(a.tail.at(1));
+		return "("+a1+"V"+a2+")";
+	}
+	
+	if (a.u.rep == "-") {
+		a1 = PrefixToInfix(a.tail.at(0));
+		return "-"+a1;
+	}
+	
+	if (a.u.rep == "E") {
+		a2 = PrefixToInfix(a.tail.at(1));
+		return "E" + a.tail.at(0).getRep() + a2;
+	}
+	
+	if (a.u.rep == "=") {
+		
+		if(a.tail.at(0).type == 0){  // type = 0 iff vterm
+			a1 = a.tail.at(0).getRep();
+		}
+		else a1 = PrefixToInfix(a.tail.at(0));
+		
+		if(a.tail.at(1).type == 0){  // type = 0 iff vterm
+			a2 = a.tail.at(1).getRep();
+		}
+		else a2 = PrefixToInfix(a.tail.at(1));
+		
+		return "("+a1+"="+a2+")";
+	}
+	return "a";
 }
